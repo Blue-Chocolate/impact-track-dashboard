@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "title": "Clean Water Project",
+    "description": "Installed 10 water filters in rural schools.",
+    "status": "Active",
+    "metrics": 150,
+    "date": "2025-09-01"
+  },
+  {
+    "id": 2,
+    "title": "Tree Plantation Drive",
+    "description": "Planted 500 trees in urban areas.",
+    "status": "Completed",
+    "metrics": 500,
+    "date": "2025-08-15"
+  },
+  {
+    "id": 3,
+    "title": "Literacy Campaign",
+    "description": "Taught 100 adults basic reading skills.",
+    "status": "Active",
+    "metrics": 100,
+    "date": "2025-09-05"
+  }
+]

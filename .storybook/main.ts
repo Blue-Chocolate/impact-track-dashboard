@@ -1,27 +1,15 @@
-import type { StorybookConfig } from '@storybook/react-vite';
+import type { StorybookConfig } from "@storybook/react-vite";
 
 const config: StorybookConfig = {
-  stories: [
-    '../src/**/*.mdx',
-    '../src/**/*.stories.@(js|jsx|ts|tsx)',
+  stories: ["../src/**/*.stories.@(js|jsx|ts|tsx)"],
+  addons: [
+    "@storybook/addon-essentials",
+    "@storybook/addon-interactions",
+    "@storybook/addon-a11y",
   ],
-
-  // ❌ Remove addons like addon-essentials, actions, controls, docs, etc.
-  addons: [],
-
   framework: {
-    name: '@storybook/react-vite',
+    name: "@storybook/react-vite",
     options: {},
-  },
-
-  features: {
-    actions: true,       // replaces addon-actions
-    backgrounds: true,   // replaces addon-backgrounds
-    controls: true,      // replaces addon-controls
-  },
-
-  docs: {
-    // autodocs property removed to fix type error
   },
 };
 

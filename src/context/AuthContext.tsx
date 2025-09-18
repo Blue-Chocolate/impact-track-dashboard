@@ -18,10 +18,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
 
   const login = async (email: string, password: string) => {
-    // مؤقت لحد ما نوصل backend
     if (email === "admin@test.com" && password === "123456") {
       setUser({ id: 1, name: "Admin User", email });
-    } else {
+
+
+    } else if (email === "user@test.com" && password === "123456") {
+      setUser({ id: 2, name: " User", email });
+    } 
+    
+    
+    else {
       throw new Error("Invalid credentials");
     }
   };

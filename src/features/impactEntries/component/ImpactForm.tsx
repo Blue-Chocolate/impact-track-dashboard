@@ -1,31 +1,82 @@
-import { useState } from "react";
-import {type ImpactEntry } from "../types";
+// src/features/impactEntries/components/ImpactEntryForm.tsx
+import { useState, useEffect } from "react";
+import { type ImpactEntry } from "../types";
 
-export default function ImpactForm({ onSubmit }: { onSubmit: (data: Omit<ImpactEntry, "id">) => void }) {
-  const [form, setForm] = useState<Omit<ImpactEntry, "id">>({
-    projectId: 0,
-    beneficiaryName: "",
-    date: "",
-    notes: "",
-  });
+interface Props {
+  onSubmit: (entry: Omit<ImpactEntry, "id"> | ImpactEntry) => void;
+  initialValues?: ImpactEntry;
+  onCancel?: () => void;
+}
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+export default function ImpactEntryForm({
+  onSubmit,
+  initialValues,
+  onCancel,
+}: Props) {
+  const [title, setTitle] = useState("");
+  const [beneficiaries, setBeneficiaries] = useState(0);
+
+  useEffect(() => {
+    if (initialValues) {
+      setTitle(initialValues.title);
+      setBeneficiaries(initialValues.beneficiaries);
+    } else {
+      setTitle("");
+      setBeneficiaries(0);
+    }
+  }, [initialValues]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || beneficiaries <= 0) return;
+
+    if (initialValues) {
+      onSubmit({ ...initialValues, title, beneficiaries });
+    } else {
+      onSubmit({ title, beneficiaries });
+    }
   };
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit(form);
-      }}
-      className="space-y-4"
-    >
-      <input name="projectId" type="number" placeholder="Project ID" value={form.projectId} onChange={handleChange} className="input" />
-      <input name="beneficiaryName" placeholder="Beneficiary Name" value={form.beneficiaryName} onChange={handleChange} className="input" />
-      <input type="date" name="date" value={form.date} onChange={handleChange} className="input" />
-      <textarea name="notes" placeholder="Notes" value={form.notes} onChange={handleChange} className="textarea" />
-      <button type="submit" className="btn-primary w-full">Save</button>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium">Title</label>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="mt-1 w-full border rounded px-3 py-2"
+          placeholder="Entry title"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">Beneficiaries</label>
+        <input
+          type="number"
+          value={beneficiaries}
+          onChange={(e) => setBeneficiaries(Number(e.target.value))}
+          className="mt-1 w-full border rounded px-3 py-2"
+          placeholder="Number of beneficiaries"
+        />
+      </div>
+
+      <div className="flex space-x-2">
+        <button
+          type="submit"
+          className="px-4 py-2 bg-primary-500 text-white rounded hover:bg-primary-600"
+        >
+          {initialValues ? "Update" : "Add"}
+        </button>
+        {initialValues && onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 }

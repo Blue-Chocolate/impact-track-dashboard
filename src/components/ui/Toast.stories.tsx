@@ -1,30 +1,32 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import Toast, { type ToastType } from "./Toast";
 import { useState } from "react";
-import { Toast } from "./Toast";
-import { Button } from "./Button";
 
 const meta: Meta<typeof Toast> = {
   title: "UI/Toast",
   component: Toast,
 };
 export default meta;
+
 type Story = StoryObj<typeof Toast>;
 
 export const Default: Story = {
   render: () => {
-    const [show, setShow] = useState(false);
+    const [show, setShow] = useState(true);
+    return show ? <Toast message="Hello!" type="info" onClose={() => setShow(false)} /> : null;
+  },
+};
 
-    return (
-      <>
-        <Button onClick={() => setShow(true)}>Show Toast</Button>
-        {show && (
-          <Toast
-            message="This is a toast!"
-            type="success"
-            onClose={() => setShow(false)}
-          />
-        )}
-      </>
-    );
+export const Success: Story = {
+  render: () => {
+    const [show, setShow] = useState(true);
+    return show ? <Toast message="Success!" type="success" onClose={() => setShow(false)} /> : null;
+  },
+};
+
+export const Error: Story = {
+  render: () => {
+    const [show, setShow] = useState(true);
+    return show ? <Toast message="Error occurred" type="error" onClose={() => setShow(false)} /> : null;
   },
 };

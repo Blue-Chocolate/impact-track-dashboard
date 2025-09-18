@@ -1,70 +1,537 @@
-// src/components/ProjectForm.tsx
-import { useState, useEffect } from "react";
-import { type Project } from "../types";
+// src/features/projects/component/ProjectForm.tsx
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import type { RootState, AppDispatch } from "../../../store/store";
+import { type ProjectFormProps } from "../types/types";
+import { VALIDATION_RULES } from "../constants/validation";
+import { getTodayDate, validateField, isFormValid } from "../utils/validation";
+import {
+  updateFormField,
+  resetForm,
+  addNotification,
+  addProject,
+  editProject,
+} from "../projectsSlice";
+import { FormField } from "./FormField";
+import { TextInput } from "./TextInput";
+import { TextArea } from "./TextArea";
+import { TemplateButtons } from "./TemplateButtons";
+import { FormActions } from "./FormActions";
+import FormStatus from "./FormStatus";
 
-interface ProjectFormProps {
-  onSubmit: (project: Omit<Project, "id"> | Project) => void;
-  initialValues?: Project;
-  onCancel?: () => void;
-}
 
 export default function ProjectForm({
   onSubmit,
   initialValues,
   onCancel,
+  isLoading = false,
 }: ProjectFormProps) {
-  const [name, setName] = useState("");
+  const dispatch = useDispatch<AppDispatch>();
+  const form = useSelector((state: RootState) => state.projects.form);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const today = getTodayDate();
 
+  // Initialize form with initialValues
   useEffect(() => {
     if (initialValues) {
-      setName(initialValues.name);
+      Object.entries(initialValues).forEach(([key, value]) =>
+        dispatch(updateFormField({ field: key, value }))
+      );
     } else {
-      setName("");
+      dispatch(resetForm());
     }
-  }, [initialValues]);
+  }, [initialValues, dispatch]);
 
+  // Real-time validation for better UX
+  useEffect(() => {
+    if (hasAttemptedSubmit) {
+      const errors: Record<string, string> = {};
+      Object.entries(form.formData).forEach(([field, value]) => {
+        const error = validateField(
+          field as keyof typeof form.formData,
+          value,
+          form.formData
+        );
+        if (error) {
+          errors[field] = error;
+        }
+      });
+      setFieldErrors(errors);
+    }
+  }, [form.formData, hasAttemptedSubmit]);
+
+  // Handle field change
+  const handleChange = (field: string, value: any) => {
+    dispatch(updateFormField({ field, value }));
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // Handle field blur & validation
+  const handleBlur = (field: string) => {
+    const error = validateField(
+      field as keyof typeof form.formData,
+      form.formData[field as keyof typeof form.formData],
+      form.formData
+    );
+    
+    if (error) {
+      setFieldErrors(prev => ({ ...prev, [field]: error }));
+    } else {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // Handle form submit with enhanced error handling
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    setHasAttemptedSubmit(true);
 
-    if (initialValues) {
-      onSubmit({ ...initialValues, name });
-    } else {
-      onSubmit({ name });
+    // Validate all fields and collect errors
+    const errors: Record<string, string> = {};
+    let hasError = false;
+
+    Object.entries(form.formData).forEach(([field, value]) => {
+      const error = validateField(
+        field as keyof typeof form.formData,
+        value,
+        form.formData
+      );
+      if (error) {
+        errors[field] = error;
+        hasError = true;
+      }
+    });
+
+    setFieldErrors(errors);
+
+    if (hasError) {
+      // Show a summary notification
+      const errorCount = Object.keys(errors).length;
+      dispatch(addNotification({ 
+        message: `Please fix ${errorCount} error${errorCount > 1 ? 's' : ''} before submitting`, 
+        type: "error" 
+      }));
+      
+      // Scroll to first error field
+      const firstErrorField = Object.keys(errors)[0];
+      const firstErrorElement = document.getElementById(firstErrorField);
+      if (firstErrorElement) {
+        firstErrorElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        firstErrorElement.focus();
+      }
+      return;
     }
-    setName("");
+
+    // Call the parent onSubmit (dispatch addProject/editProject)
+    onSubmit?.(form.formData);
+    dispatch(resetForm());
+    setFieldErrors({});
+    setHasAttemptedSubmit(false);
+  };
+
+  const formIsValid = isFormValid(form.formData) && Object.keys(fieldErrors).length === 0;
+
+  // Enhanced templates with more realistic data
+  const templates: Record<string, Record<string, any>> = {
+    education: { 
+      name: "Educational Excellence Initiative", 
+      description: "Comprehensive program to improve literacy rates and provide quality education resources to underserved communities through teacher training, curriculum development, and infrastructure improvements.",
+      beneficiaries: 150 
+    },
+    healthcare: { 
+      name: "Community Health Outreach Program", 
+      description: "Mobile health clinics and preventive care services designed to increase healthcare access in rural areas, including vaccination drives, health screenings, and medical education workshops.",
+      beneficiaries: 75 
+    },
+    environment: { 
+      name: "Green Future Sustainability Project", 
+      description: "Environmental conservation initiative focusing on renewable energy adoption, waste reduction, and community gardens to promote sustainable living practices and environmental awareness.",
+      beneficiaries: 200 
+    },
+    infrastructure: { 
+      name: "Rural Infrastructure Development", 
+      description: "Critical infrastructure improvements including clean water access, road construction, and digital connectivity to enhance quality of life and economic opportunities in rural communities.",
+      beneficiaries: 500 
+    },
+  };
+
+  // Get validation summary for submit button
+  const getValidationSummary = () => {
+    const errorFields = Object.keys(fieldErrors);
+    if (errorFields.length === 0 && !formIsValid) {
+      return "Please fill in all required fields";
+    }
+    if (errorFields.length === 1) {
+      return `Please fix the ${errorFields[0]} field`;
+    }
+    if (errorFields.length > 1) {
+      return `Please fix ${errorFields.length} validation errors`;
+    }
+    return null;
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium">Project Name</label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mt-1 w-full border rounded px-3 py-2"
-          placeholder="Enter project name"
-        />
+    <div className="max-w-4xl mx-auto">
+      {/* Enhanced Header */}
+      <div className="mb-8">
+        <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-1">
+          <div className="bg-white rounded-xl p-6">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              {initialValues ? 'Edit Project' : 'Create New Project'}
+            </h2>
+            <p className="text-gray-600 mt-2">
+              {initialValues 
+                ? 'Update your project details and save changes' 
+                : 'Fill in the details below to create a new project'}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="flex space-x-2">
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          {initialValues ? "Update" : "Add"}
-        </button>
-        {initialValues && onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-          >
-            Cancel
-          </button>
-        )}
+      {/* Main Form Card */}
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <form onSubmit={handleSubmit} className="space-y-8 p-8" noValidate>
+          {/* Template autofill section */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+            <h3 className="text-lg font-semibold text-indigo-900 mb-4 flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Quick Start Templates
+            </h3>
+            <TemplateButtons
+              templates={templates}
+              onAutoFill={(data) =>
+                Object.entries(data).forEach(([field, value]) => handleChange(field, value))
+              }
+              isLoading={isLoading || form.loading}
+            />
+          </div>
+
+          {/* Form Fields Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Column */}
+            <div className="space-y-6">
+              {/* Project Name */}
+              <div className="group">
+                <FormField
+                  id="name"
+                  name="name"
+                  label="Project Name"
+                  error={fieldErrors.name}
+                  required
+                  characterCount={{
+                    current: form.formData.name.length,
+                    max: VALIDATION_RULES.name.maxLength,
+                  }}
+                  className="transform transition-all duration-200 group-focus-within:scale-[1.02]"
+                >
+                  <TextInput
+                    id="name"
+                    name="name"
+                    value={form.formData.name}
+                    onChange={(value) => handleChange("name", value)}
+                    onBlur={() => handleBlur("name")}
+                    placeholder="Enter a descriptive project name"
+                    maxLength={VALIDATION_RULES.name.maxLength}
+                    disabled={isLoading || form.loading}
+                    className={`transition-all duration-200 ${
+                      fieldErrors.name 
+                        ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200' 
+                        : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-200'
+                    }`}
+                  />
+                </FormField>
+              </div>
+
+              {/* Beneficiaries */}
+              <div className="group">
+                <FormField
+                  id="beneficiaries"
+                  name="beneficiaries"
+                  label="Number of Beneficiaries"
+                  error={fieldErrors.beneficiaries}
+                  required
+                  helpText="Enter the estimated number of people who will directly benefit from this project"
+                >
+                  <div className="relative">
+                    <TextInput
+                      id="beneficiaries"
+                      name="beneficiaries"
+                      type="number"
+                      value={form.formData.beneficiaries}
+                      onChange={(value) => handleChange("beneficiaries", value)}
+                      onBlur={() => handleBlur("beneficiaries")}
+                      placeholder="e.g., 100"
+                      min={VALIDATION_RULES.beneficiaries.min}
+                      max={VALIDATION_RULES.beneficiaries.max}
+                      disabled={isLoading || form.loading}
+                      className={`pl-12 transition-all duration-200 ${
+                        fieldErrors.beneficiaries 
+                          ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200' 
+                          : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-200'
+                      }`}
+                    />
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                </FormField>
+              </div>
+
+              {/* Dates */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField 
+                  id="startDate" 
+                  name="startDate" 
+                  label="Start Date" 
+                  error={fieldErrors.startDate} 
+                  required
+                  helpText="Project start date"
+                >
+                  <TextInput
+                    id="startDate"
+                    name="startDate"
+                    type="date"
+                    value={form.formData.startDate}
+                    onChange={(value) => handleChange("startDate", value)}
+                    onBlur={() => handleBlur("startDate")}
+                    min={today}
+                    disabled={isLoading || form.loading}
+                    className={`transition-all duration-200 ${
+                      fieldErrors.startDate 
+                        ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200' 
+                        : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-200'
+                    }`}
+                  />
+                </FormField>
+
+                <FormField 
+                  id="endDate" 
+                  name="endDate" 
+                  label="End Date" 
+                  error={fieldErrors.endDate} 
+                  required
+                  helpText="Project completion date"
+                >
+                  <TextInput
+                    id="endDate"
+                    name="endDate"
+                    type="date"
+                    value={form.formData.endDate}
+                    onChange={(value) => handleChange("endDate", value)}
+                    onBlur={() => handleBlur("endDate")}
+                    min={form.formData.startDate || today}
+                    disabled={isLoading || form.loading}
+                    className={`transition-all duration-200 ${
+                      fieldErrors.endDate 
+                        ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200' 
+                        : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-200'
+                    }`}
+                  />
+                </FormField>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              {/* Description */}
+              <div className="group">
+                <FormField
+                  id="description"
+                  name="description"
+                  label="Project Description"
+                  error={fieldErrors.description}
+                  required
+                  characterCount={{
+                    current: form.formData.description.length,
+                    max: VALIDATION_RULES.description.maxLength,
+                  }}
+                  helpText="Provide a detailed description of the project goals, activities, and expected outcomes"
+                  className="h-full"
+                >
+                  <TextArea
+                    id="description"
+                    name="description"
+                    value={form.formData.description}
+                    onChange={(value) => handleChange("description", value)}
+                    onBlur={() => handleBlur("description")}
+                    placeholder="Describe the project goals, activities, and expected outcomes in detail..."
+                    maxLength={VALIDATION_RULES.description.maxLength}
+                    disabled={isLoading || form.loading}
+                    rows={8}
+                    className={`transition-all duration-200 resize-none ${
+                      fieldErrors.description 
+                        ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200' 
+                        : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-200'
+                    }`}
+                  />
+                </FormField>
+              </div>
+            </div>
+          </div>
+
+          {/* Validation Summary */}
+          {hasAttemptedSubmit && !formIsValid && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 animate-pulse">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <div>
+                  <h4 className="text-sm font-semibold text-red-800">
+                    Form Validation Required
+                  </h4>
+                  <p className="text-sm text-red-700 mt-1">
+                    {getValidationSummary()}
+                  </p>
+                </div>
+              </div>
+              
+              {Object.keys(fieldErrors).length > 0 && (
+                <div className="mt-3 ml-8">
+                  <ul className="text-sm text-red-700 space-y-1">
+                    {Object.entries(fieldErrors).map(([field, error]) => (
+                      <li key={field} className="flex items-center">
+                        <span className="w-1.5 h-1.5 bg-red-400 rounded-full mr-2"></span>
+                        <strong className="capitalize">{field}:</strong> {error}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Enhanced Form Actions */}
+          <div className="border-t border-gray-200 pt-8">
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+              {/* Form Status */}
+              <div className="flex items-center space-x-4">
+                <FormStatus isDirty={form.isDirty} />
+                {hasAttemptedSubmit && formIsValid && (
+                  <div className="flex items-center text-green-600 text-sm">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Form is valid
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3">
+                {onCancel && (
+                  <button
+                    type="button"
+                    onClick={onCancel}
+                    disabled={isLoading || form.loading}
+                    className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                )}
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    dispatch(resetForm());
+                    setFieldErrors({});
+                    setHasAttemptedSubmit(false);
+                  }}
+                  disabled={!form.isDirty || isLoading || form.loading}
+                  className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 disabled:opacity-50"
+                >
+                  Reset
+                </button>
+
+                <div className="relative group">
+                  <button
+                    type="submit"
+                    disabled={!formIsValid || isLoading || form.loading}
+                    className={`px-8 py-3 text-sm font-medium text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 ${
+                      formIsValid && !isLoading && !form.loading
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:ring-indigo-500 transform hover:scale-105 shadow-lg hover:shadow-xl'
+                        : 'bg-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    {isLoading || form.loading ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        {initialValues ? 'Updating...' : 'Creating...'}
+                      </span>
+                    ) : (
+                      <span className="flex items-center">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        {initialValues ? 'Update Project' : 'Create Project'}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Tooltip for disabled button */}
+                  {(!formIsValid && !isLoading && !form.loading) && (
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-gray-800 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                      {getValidationSummary()}
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
       </div>
-    </form>
+
+      {/* Quick Tips Card */}
+      <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+        <h3 className="text-lg font-semibold text-indigo-900 mb-3 flex items-center">
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Quick Tips
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-indigo-800">
+          <div className="flex items-start">
+            <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+            <span>Use templates to quickly populate common project types</span>
+          </div>
+          <div className="flex items-start">
+            <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+            <span>Project names should be clear and descriptive</span>
+          </div>
+          <div className="flex items-start">
+            <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+            <span>Include specific, measurable outcomes in descriptions</span>
+          </div>
+          <div className="flex items-start">
+            <span className="w-2 h-2 bg-indigo-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+            <span>Beneficiary count should reflect direct impact</span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
+// src/features/impactEntries/types.ts
 export interface ImpactEntry {
   id: number;
-  projectId: number;
-  beneficiaryName: string;
-  date: string;
-  notes?: string;
+  title: string;
+  beneficiaries: number;
 }

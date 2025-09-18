@@ -1,8 +1,9 @@
 export interface Project {
-  id: number;
+  id: string;
   name: string;
   description: string;
   beneficiaries: number;
   startDate: string;
   endDate: string;
 }
+

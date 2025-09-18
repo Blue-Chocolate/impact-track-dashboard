@@ -1,41 +1,30 @@
+// src/components/ui/Toast.tsx
 import React, { useEffect } from "react";
-import clsx from "clsx";
 
-type ToastType = "success" | "error" | "info";
+export type ToastType = "success" | "error" | "info";
 
-interface ToastProps {
+type ToastProps = {
   message: string;
   type?: ToastType;
-  onClose: () => void;
   duration?: number;
-}
+  onClose: () => void;
+};
 
-export const Toast: React.FC<ToastProps> = ({
-  message,
-  type = "info",
-  onClose,
-  duration = 3000,
-}) => {
+const Toast: React.FC<ToastProps> = ({ message, type = "info", duration = 3000, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(onClose, duration);
     return () => clearTimeout(timer);
-  }, [onClose, duration]);
+  }, [duration, onClose]);
 
-  const styles: Record<ToastType, string> = {
-    success: "bg-green-600 text-white",
-    error: "bg-red-600 text-white",
-    info: "bg-blue-600 text-white",
-  };
+  let bgClass = "bg-blue-500";
+  if (type === "success") bgClass = "bg-green-500";
+  if (type === "error") bgClass = "bg-red-500";
 
   return (
-    <div
-      className={clsx(
-        "fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg",
-        styles[type]
-      )}
-      role="alert"
-    >
+    <div className={`fixed bottom-4 right-4 px-4 py-2 text-white rounded ${bgClass}`}>
       {message}
     </div>
   );
 };
+
+export default Toast;

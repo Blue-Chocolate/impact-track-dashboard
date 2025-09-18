@@ -1,17 +1,10 @@
-// src/components/ui/Input.tsx
-import React, { type InputHTMLAttributes } from "react";
-
-export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
-  label?: string;
-};
-
-const Input: React.FC<InputProps> = ({ label, ...props }) => {
+// Input.tsx
+export default function Input({ className = '', ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <div className="flex flex-col mb-2">
-      {label && <label className="mb-1 font-medium">{label}</label>}
-      <input className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" {...props} />
-    </div>
+    <input
+      {...props}
+      className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 
+                  ${className}`}
+    />
   );
-};
-
-export default Input;
+}

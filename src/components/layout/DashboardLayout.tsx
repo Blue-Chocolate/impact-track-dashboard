@@ -14,6 +14,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     { to: "/projects", label: "Projects", icon: "📁" },
     { to: "/impact-entries", label: "Impact Entries", icon: "📊" },
     { to: "/reports", label: "Reports", icon: "📈" },
+    { to: "/donors", label: "Donors", icon: "💰" },
+    { to: "/settings", label: "Settings", icon: "⚙️" }
   ];
 
   // Simple gradient avatar from name

@@ -1,69 +1,71 @@
-# React + TypeScript + Vite
+git clone https://github.com/Blue-Chocolate/impact-track-dashboard.git
+cd impact-track-dashboard
+2. Install dependencies
+bash
+Copy code
+npm install
+3. Start JSON Server (mock API)
+bash
+Copy code
+npm run server
+Runs at http://localhost:4000
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Mock endpoints for projects, impactEntries, donors, settings
 
-Currently, two official plugins are available:
+4. Start the development server
+bash
+Copy code
+npm run dev
+Runs Vite dev server at http://localhost:5173
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+5. Storybook (UI component library)
+bash
+Copy code
+npm run storybook
+Runs Storybook at http://localhost:6006
 
-## Expanding the ESLint configuration
+6. Testing
+Unit / Integration tests:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+bash
+Copy code
+npm run test
+Vitest UI:
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+bash
+Copy code
+npm run test:ui
+Cypress E2E:
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+bash
+Copy code
+npm run cy:open   # open Cypress GUI
+npm run cy:run    # run headless
+⚡ Scripts Overview
+Script	Description
+dev	Start Vite dev server
+server	Start JSON Server (mock API)
+build	Build production bundle
+preview	Preview production build
+storybook	Run Storybook dev server
+build-storybook	Build Storybook static files
+test	Run Vitest tests
+test:ui	Run Vitest UI
+cy:open	Open Cypress GUI
+cy:run	Run Cypress headless
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+🔗 Notes
+Project uses TypeScript and React 19.x
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+State management: Redux Toolkit
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+UI: TailwindCSS + shadcn/ui + HeroIcons
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Charts: Recharts
+
+PDF export: jsPDF + html2canvas
+
+Notifications: react-hot-toast
+
+Form validation: Zod + react-hook-form
+

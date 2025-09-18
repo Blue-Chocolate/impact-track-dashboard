@@ -1,12 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 
-// ✅ Sidebar
 export function Sidebar() {
   const location = useLocation();
   const links = [
     { to: "/projects", label: "Projects", icon: "📂" },
     { to: "/impacts", label: "Impacts", icon: "📊" },
     { to: "/reports", label: "Reports", icon: "📑" },
+    { to: "/donors", label: "Donors", icon: "💰" },
+    { to: "/settings", label: "Settings", icon: "⚙️" },
   ];
 
   return (

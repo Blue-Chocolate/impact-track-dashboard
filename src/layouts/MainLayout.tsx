@@ -1,7 +1,7 @@
 // layouts/MainLayout.tsx
 import { Outlet } from "react-router-dom";
 import { useState } from "react";
-import Sidebar from "../components/Sidebar";
+import Sidebar from "../components/Common/Sidebar";
 import Header from "../components/Header";
 
 export default function MainLayout() {

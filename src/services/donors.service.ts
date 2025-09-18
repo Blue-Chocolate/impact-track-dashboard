@@ -1,5 +1,5 @@
-import api from "../api/axios";
-import { type Donor } from "../types";
+import api from "../Core/api/axiosInstance";
+import { type Donor } from "../Core/types";
 
 // Get all donors
 export const getDonors = async (): Promise<Donor[]> => {

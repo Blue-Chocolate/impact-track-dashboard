@@ -8,7 +8,7 @@ import {
  type  ColumnDef,
   flexRender,
 } from "@tanstack/react-table";
-import { useProjects, useDeleteProject } from "../hooks/useProjects";
+import { useProjects, useDeleteProject } from "../Core/hooks/useProjects";
 import { type Project } from "@/types";
 
 export function ProjectsTable() {

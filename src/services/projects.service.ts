@@ -1,5 +1,5 @@
-import api from "../api/axios";
-import { type Project } from "../types";
+import api from "../Core/api/axiosInstance";
+import { type Project } from "../Core/types";
 
 // Get all projects
 export const getProjects = async (params: { page: number; search?: string }) => {

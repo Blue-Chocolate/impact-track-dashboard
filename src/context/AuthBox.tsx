@@ -1,9 +1,9 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import api from "../Core/api/axiosInstance";
 
 type User = {
   id: number;
   username: string;
-  password: string;
   role: string;
 };
 
@@ -15,53 +15,67 @@ type Session = {
 
 type AuthContextType = {
   user: Session;
-  login: (u: string, p: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 };
 
-const AuthCtx = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthBoxProvider({ children }: { children: React.ReactNode }) {
-  const [activeUser, setActiveUser] = useState<Session>(null);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<Session>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("auth_data");
     if (stored) {
-      setActiveUser(JSON.parse(stored));
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.token && parsed.username && parsed.role) {
+          setUser(parsed);
+        } else {
+          localStorage.removeItem("auth_data");
+        }
+      } catch (error) {
+        console.error("Failed to parse auth_data:", error);
+        localStorage.removeItem("auth_data");
+      }
     }
   }, []);
 
   const login = async (username: string, password: string) => {
-    const res = await fetch(`http://localhost:4000/users?username=${username}&password=${password}`);
-    const data: User[] = await res.json();
+    try {
+      const res = await api.post("/login", { username, password });
+      const data: User = res.data;
 
-    if (!data.length) throw new Error("Invalid credentials");
+      const session: Session = {
+        token: data.id.toString(), // Replace with proper JWT in production
+        username: data.username,
+        role: data.role,
+      };
 
-    const found = data[0];
-    const session: Session = {
-      token: Math.random().toString(36).substring(2),
-      username: found.username,
-      role: found.role,
-    };
-
-    localStorage.setItem("auth_data", JSON.stringify(session));
-    setActiveUser(session);
+      localStorage.setItem("auth_data", JSON.stringify(session));
+      setUser(session);
+    } catch (error) {
+      throw new Error("Invalid credentials");
+    }
   };
 
   const logout = () => {
     localStorage.removeItem("auth_data");
-    setActiveUser(null);
+    setUser(null);
+    window.location.href = "/login";
   };
 
   return (
-    <AuthCtx.Provider value={{ user: activeUser, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
-    </AuthCtx.Provider>
+    </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthCtx);
-  if (!ctx) throw new Error("useAuth must be used inside AuthBoxProvider");
-  return ctx;
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }

@@ -1,11 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  getProjects,
-  createProject,
-  updateProject,
-  deleteProject,
-} from "../services/projects.service";
-import {type  Project } from "../types";
+import { keepPreviousData } from "@tanstack/react-query";
+import type { Project, PaginatedResponse } from "@/types";
+import { api } from "@/lib/api"; // axios instance
 
 // Query keys helpers
 const projectKeys = {
@@ -17,11 +13,15 @@ const projectKeys = {
   detail: (id: number) => [...projectKeys.details(), id] as const,
 };
 
-// useProjects with server-side pagination + search
+// Fetch projects with server-side pagination + search
 export function useProjects(params: { page: number; search?: string }) {
   return useQuery({
     queryKey: projectKeys.list(params),
-    queryFn: () => getProjects(params)
+    queryFn: async (): Promise<PaginatedResponse<Project>> => {
+      const res = await api.get("/projects", { params });
+      return res.data;
+    },
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -30,20 +30,23 @@ export function useCreateProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createProject,
+    mutationFn: async (project: Partial<Project>) => {
+      const res = await api.post("/projects", project);
+      return res.data;
+    },
     onMutate: async (newProject) => {
       // Cancel ongoing queries
       await queryClient.cancelQueries({ queryKey: projectKeys.lists() });
 
-      // Snapshot previous
-      const previous = queryClient.getQueryData<Project[]>(projectKeys.lists());
+      // Snapshot previous data
+      const previous = queryClient.getQueryData<PaginatedResponse<Project>>(projectKeys.lists());
 
       // Optimistic update
       if (previous) {
-        queryClient.setQueryData<Project[]>(projectKeys.lists(), [
+        queryClient.setQueryData<PaginatedResponse<Project>>(projectKeys.lists(), {
           ...previous,
-          { ...newProject, id: Date.now() }, // temp id
-        ]);
+          data: [...previous.data, { ...newProject, id: Date.now() } as Project], // temp id
+        });
       }
 
       return { previous };
@@ -64,8 +67,10 @@ export function useUpdateProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<Project> }) =>
-      updateProject(id, data),
+    mutationFn: async ({ id, data }: { id: number; data: Partial<Project> }) => {
+      const res = await api.put(`/projects/${id}`, data);
+      return res.data;
+    },
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: projectKeys.detail(updated.id) });
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
@@ -78,7 +83,10 @@ export function useDeleteProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => deleteProject(id),
+    mutationFn: async (id: number) => {
+      await api.delete(`/projects/${id}`);
+      return id;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
     },

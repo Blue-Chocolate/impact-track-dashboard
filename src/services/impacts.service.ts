@@ -1,5 +1,5 @@
-import api from "../api/axios";
-import { type  ImpactEntry } from "../types";
+import api from "../Core/api/axiosInstance";
+import { type  ImpactEntry } from "../Core/types";
 
 // Get all impacts
 export const getImpacts = async (): Promise<ImpactEntry[]> => {

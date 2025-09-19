@@ -1,69 +1,92 @@
-// src/components/FormActions.tsx
-import React from 'react';
-import { LoadingSpinner } from './LoadingSpinner';
+import React from "react";
+import Button from "@/components/ui/Button";
+import FormStatus from "./FormStatus";
+import { useDispatch } from "react-redux";
+import { addNotification } from "../../notifications/notificationsSlice";
 
 interface FormActionsProps {
-  isFormValid: boolean;
-  isLoading: boolean;
-  isDirty: boolean;
-  initialValues?: any;
   onCancel?: () => void;
   onReset: () => void;
+  initialValues: any;
+  formIsValid: boolean;
+  isLoading: boolean;
+  isDirty: boolean;
+  hasAttemptedSubmit: boolean;
 }
 
-export function FormActions({
-  isFormValid,
+export const FormActions: React.FC<FormActionsProps> = ({
+  onCancel,
+  onReset,
+  initialValues,
+  formIsValid,
   isLoading,
   isDirty,
-  initialValues,
-  onCancel,
-  onReset
-}: FormActionsProps) {
+  hasAttemptedSubmit
+}) => {
+  const dispatch = useDispatch();
+
+  const handleCancel = () => {
+    onCancel?.();
+    dispatch(addNotification({ message: "Action cancelled", type: "info" }));
+  };
+
+  const handleReset = () => {
+    onReset();
+    dispatch(addNotification({ message: "Form reset successfully", type: "success" }));
+  };
+
   return (
-    <div className="flex flex-wrap gap-3 pt-4">
-      {/* Submit Button */}
-      <button
-        type="submit"
-        disabled={!isFormValid || isLoading}
-        className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-          !isFormValid || isLoading
-            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-            : "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        }`}
-      >
-        {isLoading ? (
-          <span className="flex items-center">
-            <LoadingSpinner />
-            Processing...
-          </span>
-        ) : (
-          initialValues ? "Update Project" : "Create Project"
-        )}
-      </button>
+    <div className="border-t border-gray-200 pt-8">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+        <div className="flex items-center space-x-4">
+          <FormStatus isDirty={isDirty} />
+          {hasAttemptedSubmit && formIsValid && (
+            <div className="flex items-center text-green-600 text-sm">
+              ✅ Form is valid
+            </div>
+          )}
+        </div>
 
-      {/* Cancel Button (only for edit mode) */}
-      {initialValues && onCancel && (
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isLoading}
-          className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50"
-        >
-          Cancel
-        </button>
-      )}
+        <div className="flex space-x-3">
+          {onCancel && (
+            <Button
+              type="button"
+              onClick={handleCancel}
+              disabled={isLoading}
+              className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border rounded-xl"
+            >
+              Cancel
+            </Button>
+          )}
 
-      {/* Reset Button (only for new projects) */}
-      {!initialValues && (
-        <button
-          type="button"
-          onClick={onReset}
-          disabled={!isDirty || isLoading}
-          className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50"
-        >
-          Reset Form
-        </button>
-      )}
+          <Button
+            type="button"
+            onClick={handleReset}
+            disabled={!isDirty || isLoading}
+            className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border rounded-xl"
+          >
+            Reset
+          </Button>
+
+          <Button
+            type="submit"
+            disabled={!formIsValid || isLoading}
+            className={`px-8 py-3 text-sm font-medium text-white rounded-xl ${
+              !formIsValid || isLoading
+                ? "bg-indigo-300 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700"
+            }`}
+            onClick={() => {
+              dispatch(addNotification({
+                message: initialValues ? "Project updated successfully" : "Project created successfully",
+                type: "success"
+              }));
+            }}
+          >
+            {initialValues ? "Update Project" : "Create Project"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
-}
+};

@@ -23,7 +23,6 @@ const initialState: ReportsState = {
   searchTerm: "",
 };
 
-// Async fetch (simulate API)
 export const loadReports = createAsyncThunk(
   "reports/loadReports",
   async () => {

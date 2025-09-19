@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from "react";
+// src/context/AuthContext.tsx
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 interface User {
   id: number;
@@ -8,7 +9,8 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  token: string | null;
+  login: (user: User, token: string) => void;
   logout: () => void;
 }
 
@@ -16,28 +18,35 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
-  const login = async (email: string, password: string) => {
-    if (email === "admin@test.com" && password === "123456") {
-      setUser({ id: 1, name: "Admin User", email });
+  useEffect(() => {
+    // استرجاع بيانات المستخدم من localStorage عند بداية التشغيل
+    const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("token");
 
-
-    } else if (email === "user@test.com" && password === "123456") {
-      setUser({ id: 2, name: " User", email });
-    } 
-    
-    
-    else {
-      throw new Error("Invalid credentials");
+    if (storedUser && storedToken) {
+      setUser(JSON.parse(storedUser));
+      setToken(storedToken);
     }
+  }, []);
+
+  const login = (user: User, token: string) => {
+    setUser(user);
+    setToken(token);
+    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("token", token);
   };
 
   const logout = () => {
     setUser(null);
+    setToken(null);
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -45,6 +54,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };

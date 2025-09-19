@@ -1,5 +1,5 @@
 import React, { type ReactNode, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
 interface DashboardLayoutProps {
@@ -9,6 +9,7 @@ interface DashboardLayoutProps {
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
 
   const links = [
     { to: "/projects", label: "Projects", icon: "📁" },
@@ -25,6 +26,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     .slice(0, 2)
     .join("")
     .toUpperCase();
+
+  const handleLogout = () => {
+    logout();           // clear localStorage + context
+    navigate("/login"); // redirect
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -59,7 +65,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
         <div className="p-4 border-t">
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="w-full px-4 py-2 rounded-md bg-danger text-white hover:bg-red-600 transition"
           >
             Logout

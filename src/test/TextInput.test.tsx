@@ -1,10 +1,11 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TextInput } from '../features/projects/component/TextInput';
 
 describe('TextInput Component', () => {
-  const mockOnChange = jest.fn();
-  const mockOnBlur = jest.fn();
+  const mockOnChange = vi.fn();
+  const mockOnBlur = vi.fn();
 
   beforeEach(() => {
     mockOnChange.mockClear();
